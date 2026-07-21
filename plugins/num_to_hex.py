@@ -1,8 +1,8 @@
 import struct
 
-NAME = "数值转换 IEEE754 内存编码"
-CATEGORY = "编码"
-DESC = "将输入的数转为内存编码 IEEE754 的表现形式"
+NAME = "数值转换IEEE754内存编码"
+CATEGORY = "编码处理"
+DESC = "将输入的数转为内存编码IEEE754的表现形式"
 
 def run(data: str, config: dict = None) -> str:
     try:

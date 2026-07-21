@@ -1,5 +1,5 @@
-NAME = "ASCII 编码转换"
-CATEGORY = "编码"
+NAME = "ASCII编码转换"
+CATEGORY = "编码处理"
 DESC = "字符与ASCII码互转，支持2/8/10/16进制"
 
 META = {
@@ -16,7 +16,7 @@ META = {
         {
             "name": "base",
             "type": "radio",
-            "label": "进制",
+            "label": "输入进制",
             "options": [
                 "2进制",
                 "8进制",

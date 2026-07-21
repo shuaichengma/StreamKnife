@@ -1,8 +1,12 @@
+import os
+from PySide6.QtCore import Qt
+import json
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QPushButton, QListWidget,
-    QLabel, QLineEdit,QRadioButton, QButtonGroup,
-    QCheckBox, QFileDialog
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
+    QTextEdit, QPushButton, QListWidget, QMessageBox, QMenu,
+    QLabel, QLineEdit, QPlainTextEdit, QRadioButton, QButtonGroup,
+    QCheckBox, QFileDialog, QSystemTrayIcon
 )
 from utils.file_io import save_text
 from datetime import datetime
@@ -14,6 +18,19 @@ class MainWindow(QWidget):
         self.dispatcher = dispatcher
 
         self.setWindowTitle("StreamKnife by 帅成马")
+
+        # ---- 系统托盘 ----
+        self.tray = QSystemTrayIcon(self)
+        self.tray.setIcon(QIcon("assets/app.ico"))
+        self.tray.setToolTip("StreamKnife")
+
+        tray_menu = QMenu()
+        tray_menu.addAction("显示窗口", self._restore_from_tray)
+        tray_menu.addSeparator()
+        tray_menu.addAction("退出", self._quit_from_tray)
+        self.tray.setContextMenu(tray_menu)
+        self.tray.activated.connect(self._on_tray_activated)
+        self.tray.show()
 
         # ===== 参数框 =====
         self.param_box = QVBoxLayout()
@@ -34,7 +51,10 @@ class MainWindow(QWidget):
 
         # ===== 按钮 =====
         self.run_btn = QPushButton("执行")
-        self.save_btn = QPushButton("保存")
+        self.save_btn = QPushButton("快速保存")
+        self.save_as_btn = QPushButton("另存为...")
+        self.import_btn = QPushButton("导入文件")
+        self.copy_btn = QPushButton("一键复制")
 
 
         # ===== 布局 =====
@@ -48,12 +68,34 @@ class MainWindow(QWidget):
         layout.addLayout(top_layout)
         layout.addWidget(QLabel("参数配置"))
         layout.addWidget(self.param_widget)
-        layout.addWidget(QLabel("输入"))
+
+        input_header = QHBoxLayout()
+        self.input_label = QLabel("输入")
+        input_header.addWidget(self.input_label)
+        input_header.addStretch()
+        input_header.addWidget(self.import_btn)
+        layout.addLayout(input_header)
         layout.addWidget(self.input_box)
         layout.addWidget(self.run_btn)
-        layout.addWidget(QLabel("输出"))
+
+        output_header = QHBoxLayout()
+        output_header.addWidget(QLabel("输出"))
+        output_header.addStretch()
+        output_header.addWidget(self.copy_btn)
+        layout.addLayout(output_header)
         layout.addWidget(self.output_box)
-        layout.addWidget(self.save_btn)
+
+        self.status_label = QLabel("右键可重置关闭行为")
+        self.status_label.setStyleSheet("color: gray;")
+        self.status_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.status_label.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.status_label.customContextMenuRequested.connect(self._on_status_context_menu)
+
+        btn_layout = QHBoxLayout()
+        btn_layout.addWidget(self.save_btn)
+        btn_layout.addWidget(self.save_as_btn)
+        layout.addLayout(btn_layout)
+        layout.addWidget(self.status_label)
 
 
         self.setLayout(layout)
@@ -61,6 +103,9 @@ class MainWindow(QWidget):
         # ===== 绑定 =====
         self.run_btn.clicked.connect(self.run)
         self.save_btn.clicked.connect(self.save)
+        self.save_as_btn.clicked.connect(self.save_as)
+        self.import_btn.clicked.connect(self.import_file)
+        self.copy_btn.clicked.connect(self.copy_result)
         self.search_box.textChanged.connect(self.filter_plugins)
 
     # 注入数据
@@ -89,6 +134,10 @@ class MainWindow(QWidget):
 
         self.plugin_list.clear()
         self.func_map = {}
+
+        # 恢复输入框显示
+        self.input_label.setVisible(True)
+        self.input_box.setVisible(True)
 
         for key, meta in self.all_plugins.items():
             if meta["category"] == category:
@@ -121,11 +170,17 @@ class MainWindow(QWidget):
 
         self.clear_layout(self.param_box)
         self.param_values = {}
+        self.param_containers = {}
 
         for p in meta.get("meta", {}).get("params", []):
+            container = QWidget()
+            container_layout = QVBoxLayout(container)
+            container_layout.setContentsMargins(0, 0, 0, 0)
+            self.param_box.addWidget(container)
+            self.param_containers[p["name"]] = container
 
             label = QLabel(p["label"])
-            self.param_box.addWidget(label)
+            container_layout.addWidget(label)
 
             # ===== radio =====
             if p["type"] == "radio":
@@ -137,27 +192,68 @@ class MainWindow(QWidget):
                     hbox.addWidget(rb)
                     group.addButton(rb)
 
-                self.param_box.addLayout(hbox)
+                    if opt == p.get("default", p["options"][0]):
+                        rb.setChecked(True)
+
+                container_layout.addLayout(hbox)
                 self.param_values[p["name"]] = group
+                group.buttonClicked.connect(self.update_param_visibility)
 
             # ===== input =====
             elif p["type"] == "input":
-                line = QLineEdit()
-                self.param_box.addWidget(line)
+                if p.get("multiline"):
+                    line = QPlainTextEdit()
+                    line.setPlaceholderText(p.get("placeholder", ""))
+                    line.setFixedHeight(60)
+                else:
+                    line = QLineEdit()
+                    line.setPlaceholderText(p.get("placeholder", ""))
+                container_layout.addWidget(line)
                 self.param_values[p["name"]] = line
 
             # ===== checkbox =====
             elif p["type"] == "checkbox":
                 cb = QCheckBox(p["label"])
                 cb.setChecked(p.get("default", False))
-                self.param_box.addWidget(cb)
+                container_layout.addWidget(cb)
                 self.param_values[p["name"]] = cb
+
+        self.current_params = meta.get("meta", {}).get("params", [])
+        self.update_param_visibility()
+
+        # 插件标记 hide_input 时隐藏输入框
+        hide = meta.get("meta", {}).get("hide_input", False)
+        self.input_label.setVisible(not hide)
+        self.input_box.setVisible(not hide)
+
+    def update_param_visibility(self):
+        for p in getattr(self, "current_params", []):
+            condition = p.get("visible_when")
+            visible = True
+
+            if condition:
+                controller = self.param_values.get(condition["param"])
+                expected = condition.get("equals")
+
+                if isinstance(controller, QButtonGroup):
+                    checked = controller.checkedButton()
+                    visible = checked is not None and checked.text() == expected
+                elif isinstance(controller, QCheckBox):
+                    visible = controller.isChecked() == expected
+                elif isinstance(controller, QLineEdit):
+                    visible = controller.text() == expected
+
+            self.param_containers[p["name"]].setVisible(visible)
 
 
     # 搜索过滤
     def filter_plugins(self, text):
         self.plugin_list.clear()
         self.func_map = {}
+
+        # 恢复输入框显示
+        self.input_label.setVisible(True)
+        self.input_box.setVisible(True)
 
         for key, meta in self.all_plugins.items():
 
@@ -191,7 +287,10 @@ class MainWindow(QWidget):
 
                 # input
                 elif p["type"] == "input":
-                    config[p["name"]] = widget.text()
+                    if isinstance(widget, QPlainTextEdit):
+                        config[p["name"]] = widget.toPlainText()
+                    else:
+                        config[p["name"]] = widget.text()
 
                 # checkbox
                 elif p["type"] == "checkbox":
@@ -200,15 +299,65 @@ class MainWindow(QWidget):
         result = self.dispatcher.run(keys[0], data, config)
         self.output_box.setPlainText(result)
 
-    # 保存
+    # 一键复制
+    def copy_result(self):
+        content = self.output_box.toPlainText()
+        if not content:
+            return
+        QApplication.clipboard().setText(content)
+        self.status_label.setStyleSheet("color: green;")
+        self.status_label.setText("已复制到剪贴板")
+
+    # 导入文件
+    def import_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "导入文件",
+            "",
+            "文本文件 (*.txt);;所有文件 (*.*)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.input_box.setPlainText(content)
+            self.status_label.setText(f"已导入：{os.path.normpath(file_path)}")
+        except Exception as e:
+            self.status_label.setText(f"导入失败：{e}")
+
+    # 快速保存（exe/脚本所在目录 + 默认文件名）
     def save(self):
+        import sys
+        content = self.output_box.toPlainText()
+        if not content:
+            return
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"result_{timestamp}.txt"
+
+        if getattr(sys, 'frozen', False):
+            base = os.path.dirname(sys.executable)
+        else:
+            base = os.path.abspath(".")
+
+        file_path = os.path.normpath(os.path.join(base, filename))
+
+        save_text(file_path, content)
+        self.status_label.setStyleSheet("color: green;")
+        self.status_label.setText(f"已保存至：{file_path}")
+
+    # 另存为（弹窗选择路径/格式/文件名）
+    def save_as(self):
         content = self.output_box.toPlainText()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         default_name = f"result_{timestamp}.txt"
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "保存结果",
+            "另存为",
             default_name,
             "文本文件 (*.txt);;"
             "HTML文件 (*.html);;"
@@ -221,4 +370,123 @@ class MainWindow(QWidget):
         if not file_path:
             return
 
+        file_path = os.path.normpath(file_path)
         save_text(file_path, content)
+        self.status_label.setStyleSheet("color: green;")
+        self.status_label.setText(f"已保存至：{file_path}")
+
+    # ---- 关闭行为 ----
+
+    def _settings_path(self):
+        import sys
+        if getattr(sys, 'frozen', False):
+            base = os.path.dirname(sys.executable)
+        else:
+            base = os.path.abspath(".")
+        return os.path.join(base, "config", "settings.json")
+
+    def _load_close_preference(self):
+        path = self._settings_path()
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data.get("close_action")
+        except Exception:
+            return None
+
+    def _save_close_preference(self, action):
+        path = self._settings_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        data = {}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            pass
+        data["close_action"] = action
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def _reset_close_preference(self):
+        path = self._settings_path()
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            data.pop("close_action", None)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        self.status_label.setText("已重置关闭行为，下次关闭时将再次询问")
+        self.status_label.setStyleSheet("color: green;")
+
+    def _on_status_context_menu(self, pos):
+        menu = QMenu(self)
+        action = menu.addAction("重置关闭行为")
+        action.triggered.connect(self._reset_close_preference)
+        menu.exec(self.status_label.mapToGlobal(pos))
+
+    def closeEvent(self, event):
+        pref = self._load_close_preference()
+
+        # 已有记忆 → 直接执行
+        if pref == "quit":
+            self.tray.hide()
+            event.accept()
+            return
+        if pref == "minimize":
+            self.hide()
+            self.tray.showMessage("StreamKnife", "已最小化到任务栏，双击图标恢复", QSystemTrayIcon.Information, 2000)
+            event.ignore()
+            return
+
+        # 无记忆 → 弹窗询问
+        msg = QMessageBox(self)
+        msg.setWindowTitle("关闭")
+        msg.setText("确定退出软件？")
+        msg.setIcon(QMessageBox.Question)
+
+        btn_quit = msg.addButton("退出", QMessageBox.YesRole)
+        btn_minimize = msg.addButton("最小化", QMessageBox.NoRole)
+        btn_cancel = msg.addButton("取消", QMessageBox.RejectRole)
+
+        cb = QCheckBox("记住我的选择")
+        msg.setCheckBox(cb)
+
+        msg.exec()
+
+        clicked = msg.clickedButton()
+
+        if clicked == btn_cancel:
+            event.ignore()
+            return
+
+        if clicked == btn_minimize:
+            if cb.isChecked():
+                self._save_close_preference("minimize")
+            self.hide()
+            self.tray.showMessage("StreamKnife", "已最小化到任务栏，双击图标恢复", QSystemTrayIcon.Information, 2000)
+            event.ignore()
+            return
+
+        if clicked == btn_quit:
+            if cb.isChecked():
+                self._save_close_preference("quit")
+            self.tray.hide()
+            event.accept()
+            return
+
+        event.ignore()
+
+    def _restore_from_tray(self):
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def _quit_from_tray(self):
+        self.tray.hide()
+        QApplication.quit()
+
+    def _on_tray_activated(self, reason):
+        if reason == QSystemTrayIcon.DoubleClick:
+            self._restore_from_tray()

@@ -813,3 +813,97 @@ hello world
 https://example.com/test?a=1&b=2
 ```
 
+```
+<?xml version="1.0"?>
+<!DOCTYPE items [
+<!ELEMENT items (item*)>
+<!ATTLIST items burpVersion CDATA "">
+<!ATTLIST items exportTime CDATA "">
+<!ELEMENT item (time, url, host, port, protocol, method, path, extension, request, status, responselength, mimetype, response, comment)>
+<!ELEMENT time (#PCDATA)>
+<!ELEMENT url (#PCDATA)>
+<!ELEMENT host (#PCDATA)>
+<!ATTLIST host ip CDATA "">
+<!ELEMENT port (#PCDATA)>
+<!ELEMENT protocol (#PCDATA)>
+<!ELEMENT method (#PCDATA)>
+<!ELEMENT path (#PCDATA)>
+<!ELEMENT extension (#PCDATA)>
+<!ELEMENT request (#PCDATA)>
+<!ATTLIST request base64 (true|false) "false">
+<!ELEMENT status (#PCDATA)>
+<!ELEMENT responselength (#PCDATA)>
+<!ELEMENT mimetype (#PCDATA)>
+<!ELEMENT response (#PCDATA)>
+<!ATTLIST response base64 (true|false) "false">
+<!ELEMENT comment (#PCDATA)>
+]>
+<items burpVersion="2025.6.3" exportTime="Tue Jun 16 21:36:20 CST 2026">
+  <item>
+    <time>Tue Jun 16 21:23:31 CST 2026</time>
+    <url><![CDATA[https://b1aeb8c8-6639-469e-b352-235a3d7c6962.challenge.ctf.show/?id=1/**/||/**/ascii(substring((select/**/flag/**/from/**/flag)/**/from/**/17/**/for/**/1))/**/=/**/45]]></url>
+    <host ip="124.223.158.81">b1aeb8c8-6639-469e-b352-235a3d7c6962.challenge.ctf.show</host>
+    <port>443</port>
+    <protocol>https</protocol>
+    <method><![CDATA[GET]]></method>
+    <path><![CDATA[/?id=1/**/||/**/ascii(substring((select/**/flag/**/from/**/flag)/**/from/**/17/**/for/**/1))/**/=/**/45]]></path>
+    <extension>null</extension>
+    <request base64="true"><![CDATA[R0VUIC8/aWQ9MS8qKi98fC8qKi9hc2NpaShzdWJzdHJpbmcoKHNlbGVjdC8qKi9mbGFnLyoqL2Zyb20vKiovZmxhZykvKiovZnJvbS8qKi8xNy8qKi9mb3IvKiovMSkpLyoqLz0vKiovNDUgSFRUUC8xLjENCkhvc3Q6IGIxYWViOGM4LTY2MzktNDY5ZS1iMzUyLTIzNWEzZDdjNjk2Mi5jaGFsbGVuZ2UuY3RmLnNob3cNClVzZXItQWdlbnQ6IE1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQ7IHJ2OjE0Ni4wKSBHZWNrby8yMDEwMDEwMSBGaXJlZm94LzE0Ni4wDQpBY2NlcHQ6IHRleHQvaHRtbCxhcHBsaWNhdGlvbi94aHRtbCt4bWwsYXBwbGljYXRpb24veG1sO3E9MC45LCovKjtxPTAuOA0KQWNjZXB0LUxhbmd1YWdlOiB6aC1DTix6aDtxPTAuOCx6aC1UVztxPTAuNyx6aC1ISztxPTAuNSxlbi1VUztxPTAuMyxlbjtxPTAuMg0KQWNjZXB0LUVuY29kaW5nOiBnemlwLCBkZWZsYXRlLCBicg0KUmVmZXJlcjogaHR0cHM6Ly9iMWFlYjhjOC02NjM5LTQ2OWUtYjM1Mi0yMzVhM2Q3YzY5NjIuY2hhbGxlbmdlLmN0Zi5zaG93Lw0KT3JpZ2luOiBodHRwczovL2IxYWViOGM4LTY2MzktNDY5ZS1iMzUyLTIzNWEzZDdjNjk2Mi5jaGFsbGVuZ2UuY3RmLnNob3cvDQpTZWMtR3BjOiAxDQpVcGdyYWRlLUluc2VjdXJlLVJlcXVlc3RzOiAxDQpTZWMtRmV0Y2gtRGVzdDogZG9jdW1lbnQNClNlYy1GZXRjaC1Nb2RlOiBuYXZpZ2F0ZQ0KU2VjLUZldGNoLVNpdGU6IHNhbWUtb3JpZ2luDQpTZWMtRmV0Y2gtVXNlcjogPzENClByaW9yaXR5OiB1PTAsIGkNClRlOiB0cmFpbGVycw0KQ29ubmVjdGlvbjoga2VlcC1hbGl2ZQ0KDQo=]]></request>
+    <status>200</status>
+    <responselength>4208</responselength>
+    <mimetype>HTML</mimetype>
+    <response base64="true"><![CDATA[SFRUUC8xLjEgMjAwIE9LDQpTZXJ2ZXI6IG5naW54LzEuMjAuMQ0KRGF0ZTogVHVlLCAxNiBKdW4gMjAyNiAxMzoyMzoxOSBHTVQNCkNvbnRlbnQtVHlwZTogdGV4dC9odG1sOyBjaGFyc2V0PVVURi04DQpDb25uZWN0aW9uOiBrZWVwLWFsaXZlDQpYLVBvd2VyZWQtQnk6IFBIUC83LjMuMTENCkFjY2Vzcy1Db250cm9sLUFsbG93LU1ldGhvZHM6IEdFVCxQT1NULFBVVCxERUxFVEUsT1BUSU9OUw0KQWNjZXNzLUNvbnRyb2wtQWxsb3ctQ3JlZGVudGlhbHM6IHRydWUNCkFjY2Vzcy1Db250cm9sLUV4cG9zZS1IZWFkZXJzOiBDb250ZW50LVR5cGUsQ29va2llcyxBYWEsRGF0ZSxTZXJ2ZXIsQ29udGVudC1MZW5ndGgsQ29ubmVjdGlvbg0KQWNjZXNzLUNvbnRyb2wtQWxsb3ctSGVhZGVyczogRE5ULFgtQ3VzdG9tSGVhZGVyLEtlZXAtQWxpdmUsVXNlci1BZ2VudCxYLVJlcXVlc3RlZC1XaXRoLElmLU1vZGlmaWVkLVNpbmNlLENhY2hlLUNvbnRyb2wsQ29udGVudC1UeXBlLEF1dGhvcml6YXRpb24seC1hdXRoLXRva2VuLENvb2tpZXMsQWFhLERhdGUsU2VydmVyLENvbnRlbnQtTGVuZ3RoLENvbm5lY3Rpb24NCkFjY2Vzcy1Db250cm9sLU1heC1BZ2U6IDE3MjgwMDANCkNvbnRlbnQtTGVuZ3RoOiAzNTgwDQoNCjxodG1sIGxhbmc9InpoLUNOIj4KCjxoZWFkPgogICAgPG1ldGEgaHR0cC1lcXVpdj0iQ29udGVudC1UeXBlIiBjb250ZW50PSJ0ZXh0L2h0bWw7IGNoYXJzZXQ9VVRGLTgiIC8+CiAgICA8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBtaW5pbXVtLXNjYWxlPTEuMCwgbWF4aW11bS1zY2FsZT0xLjAsIGluaXRpYWwtc2NhbGU9MS4wIiAvPgogICAgPHRpdGxlPmN0Zi5zaG93X3dlYjg8L3RpdGxlPgo8L2hlYWQ+Cjxib2R5PgogICAgPGNlbnRlcj4KICAgIDxoMj5jdGYuc2hvd193ZWI4PC9oMj4KICAgIDxocj4KICAgIDwvY2VudGVyPgoKPGNlbnRlcj48aDQ+SWY8L2g0PjwvY2VudGVyPjxicj5CeSBSdWR5YXJkIEtpcGxpbmcNCg0KDQpJZiB5b3UgY2FuIGtlZXAgeW91ciBoZWFkDQpCeSBSdWR5YXJkIEtpcGxpbmcNCg0KDQpJZiB5b3UgY2FuIGtlZXAgeW91ciBoZWFkDQoNCg0KV2hlbiBhbGwgYWJvdXQgeW91IGFyZSBsb3NpbmcgdGhlaXJzDQoNCg0KQW5kIGJsYW1pbmcgaXQgb24geW91LA0KDQoNCklmIHlvdSBjYW4gdHJ1c3QgeW91cnNlbGYgd2hlbiBhbGwgbWVuIGRvdWJ0IHlvdSwNCg0KDQpCdXQgbWFrZSBhbGxvd2FuY2UgZm9yIHRoZWlyIGRvdWJ0aW5nIHRvbzsNCg0KDQpJZiB5b3UgY2FuIHdhaXQgYW5kIG5vdCBiZSB0aXJlZCBieSB3YWl0aW5nLA0KDQoNCk9yIGJlaW5nIGxpZWQgYWJvdXQsIGRvbid0IGRlYWwgaW4gbGllcywNCg0KDQpPciBiZWluZyBoYXRlZCwgZG9uJ3QgZ2l2ZSB3YXkgdG8gaGF0aW5nLA0KDQoNCkFuZCB5ZXQgZG9uJ3QgbG9vayB0b28gZ29vZCwgbm9yIHRhbGsgdG9vIHdpc2U7DQoNCg0KSWYgeW91IGNhbiBkcmVhbS1hbmQgbm90IG1ha2UgZHJlYW1zIHlvdXIgbWFzdGVyOw0KDQoNCklmIHlvdSBjYW4gdGhpbmstYW5kIG5vdCBtYWtlIHRob3VnaHRzIHlvdXIgYWltOw0KDQoNCklmIHlvdSBjYW4gbWVldCB3aXRoIFRyaXVtcGggYW5kIERpc2FzdGVyDQoNCg0KQW5kIHRyZWF0IHRob3NlIHR3byBpbXBvc3RvcnMganVzdCB0aGUgc2FtZTsNCg0KDQpJZiB5b3UgY2FuIGJlYXIgdG8gaGVhciB0aGUgdHJ1dGggeW91J3ZlIHNwb2tlbg0KDQoNClR3aXN0ZWQgYnkga25hdmVzIHRvIG1ha2UgYSB0cmFwIGZvciBmb29scywNCg0KDQpPciB3YXRjaCB0aGUgdGhpbmdzIHlvdSBnYXZlIHlvdXIgbGlmZSB0bywgYnJva2VuLA0KDQoNCkFuZCBzdG9vcCBhbmQgYnVpbGQgJ2VtIHVwIHdpdGggd29ybi1vdXQgdG9vbHM7DQoNCg0KSWYgeW91IGNhbiBtYWtlIG9uZSBoZWFwIG9mIGFsbCB5b3VyIHdpbm5pbmdzDQoNCg0KQW5kIHJpc2sgaXQgYWxsIG9uIG9uZSB0dXJuIG9mIHBpdGNoLWFuZC10b3NzLA0KDQoNCkFuZCBsb3NlLCBhbmQgc3RhcnQgYWdhaW4gYXQgeW91ciBiZWdpbm5pbmdzDQoNCg0KQW5kIG5ldmVyIGJyZWF0aGUgYSB3b3JkIGFib3V0IHlvdXIgbG9zczsNCg0KDQpJZiB5b3UgY2FuIGZvcmNlIHlvdXIgaGVhcnQgYW5kIG5lcnZlIGFuZCBzaW5ldw0KDQoNClRvIHNlcnZlIHlvdXIgdHVybiBsb25nIGFmdGVyIHRoZXkgYXJlIGdvbmUsDQoNCg0KQW5kIHNvIGhvbGQgb24gd2hlbiB0aGVyZSBpcyBub3RoaW5nIGluIHlvdQ0KDQoNCkV4Y2VwdCB0aGUgV2lsbCB3aGljaCBzYXlzIHRvIHRoZW06ICJIb2xkIG9uISINCg0KDQpJZiB5b3UgY2FuIHRhbGsgd2l0aCBjcm93ZHMgYW5kIGtlZXAgeW91ciB2aXJ0dWUsDQoNCg0KT3Igd2FsayB3aXRoIGtpbmdzLW5vciBsb3NlIHRoZSBjb21tb24gdG91Y2gsDQoNCg0KSWYgbmVpdGhlciBmb2VzIG5vciBsb3ZpbmcgZnJpZW5kcyBjYW4gaHVydCB5b3UsDQoNCg0KSWYgYWxsIG1lbiBjb3VudCB3aXRoIHlvdSwgYnV0IG5vbmUgdG9vIG11Y2g7DQoNCg0KSWYgeW91IGNhbiBmaWxsIHRoZSB1bmZvcmdpdmluZyBtaW51dGUNCg0KDQpXaXRoIHNpeHR5IHNlY29uZHMnIHdvcnRoIG9mIGRpc3RhbmNlIHJ1biwNCg0KDQpZb3VycyBpcyB0aGUgRWFydGggYW5kIGV2ZXJ5dGhpbmcgdGhhdCdzIGluIGl0LA0KDQoNCkFuZC13aGljaCBpcyBtb3JlLXlvdSdsbCBiZSBhIE1hbiwgbXkgc29uITxicj48Y2VudGVyPjxoND5BIENoaWxkJ3MgRHJlYW0gb2YgYSBTdGFyPC9oND48L2NlbnRlcj48YnI+VGhlcmUgd2FzIG9uZSBjbGVhciwgc2hpbmluZyBzdGFyIHRoYXQgdXNlZCB0byBjb21lIG91dCBpbiB0aGUgc2t5IGJlZm9yZSB0aGUgcmVzdCwgbmVhciB0aGUgY2h1cmNoIHNwaXJlLCBhYm92ZSB0aGUgZ3JhdmVzLg0KDQpJdCB3YXMgbGFyZ2VyIGFuZCBtb3JlIGJlYXV0aWZ1bCwgdGhleSB0aG91Z2h0LCB0aGFuIGFsbCBvdGhlcnMuDQoNCkFuZCBldmVyeSBuaWdodCB0aGV5IHdhdGNoZWQgZm9yIGl0LCBzdGFuZGluZyBoYW5kIGluIGhhbmQgYXQgdGhlIHdpbmRvdy4NCg0KV2hvZXZlciBzYXcgaXQgZmlyc3QsIGNyaWVkIG91dCwgIkkgc2VlIHRoZSBzdGFyISINCg0KQW5kIG9mdGVuIHRoZXkgY3JpZWQgb3V0IGJvdGggdG9nZXRoZXIsIGtub3dpbmcgc28gd2VsbCB3aGVuIGl0IHdvdWxkIHJpc2UsIGFuZCB3aGVyZS4NCg0KU28gdGhleSBncmV3IHRvIGJlIHN1Y2ggZnJpZW5kcyB3aXRoIGl0LCB0aGF0LCBiZWZvcmUgbHlpbmcgZG93biBpbiB0aGVpciBiZWRzLCANCg0KdGhleSBhbHdheXMgbG9va2VkIG91dCBvbmNlIGFnYWluLCB0byBiaWRpdCBnb29kIG5pZ2h0OyANCg0KYW5kIHdoZW4gdGhleSB3ZXJlIHR1cm5pbmcgYXJvdW5kIHRvIHNsZWVwLCB0aGV5IHVzZWQgdG8gc2F5LCAiR29kIGJsZXNzIHRoZSBzdGFyISI8YnI+PGNlbnRlcj48aDQ+SSBhc2tlZCBub3RoaW5nPC9oND48L2NlbnRlcj48YnI+SSBhc2tlZCBub3RoaW5n77yMIG9ubHkgc3Rvb2QgYXQgdGhlIGVkZ2Ugb2YgdGhlIHdvb2QgYmVoaW5kIHRoZSB0cmVlLg0KDQpMYW5ndW9yIHdhcyBzdGlsbCB1cG9uIHRoZSBleWVzIG9mIHRoZSBkYXdu77yMIGFuZCB0aGUgZGV3IGluIHRoZSBhaXIuDQoNClRoZSBsYXp5IHNtZWxsIG9mIHRoZSBkYW1wIGdyYXNzIGh1bmcgaW4gdGhlIHRoaW4gbWlzdCBhYm92ZSB0aGUgZWFydGguDQoNClVuZGVyIHRoZSBiYW55YW4gdHJlZSB5b3Ugd2VyZSBtaWxraW5nIHRoZSBjb3cgd2l0aCB5b3VyIGhhbmRz77yMIHRlbmRlciBhbmQgZnJlc2ggYXNidXR0ZXIuDQoNCkFuZCBJIHdhcyBzdGFuZGluZyBzdGlsbC4NCg0KSSBkaWQgbm90IGNvbWUgbmVhciB5b3UuDQoNClRoZSBza3kgd29rZSB3aXRoIHRoZSBzb3VuZCBvZiB0aGUgZ29uZyBhdCB0aGUgdGVtcGxlLg0KDQpUaGUgZHVzdCB3YXMgcmFpc2VkIGluIHRoZSByb2FkIGZyb20gdGhlIGhvb2ZzIG9mIHRoZSBkcml2ZW4gY2F0dGxlLg0KDQpXaXRoIHRoZSBndXJnbGluZyBwaXRjaGVycyBhdCB0aGVpciBoaXBz77yMIHdvbWVuIGNhbWUgZnJvbSB0aGUgcml2ZXIuDQoNCllvdXIgYnJhY2VsZXRzIHdlcmUgamluZ2xpbmfvvIwgYW5kIGZvYW0gYnJpbW1pbmcgb3ZlciB0aGUgamFyLg0KDQpUaGUgbW9ybmluZyB3b3JlIG9uIGFuZCBJIGRpZCBub3QgY29tZSBuZWFyIHlvdS48YnI+PGNlbnRlcj48YSBocmVmPSJpbmRleC5waHAiPuaWh+eroOWIl+ihqDwvYT48L2NlbnRlcj48YnI+CjwvYm9keT4KPC9odG1sPgo=]]></response>
+    <comment></comment>
+  </item>
+</items>
+```
+
+```
+[INFO]2026-07-21 09:15:22 target=192.168.1.10:80 status=open xxx10.0.0.5:443yyy 来源IP：172.16.20.33，端口：8080；http://192.168.1.50:8080/admin/login client=192.168.1.10:80 server=10.0.0.5:443 bytes=1024 +++192.168.7.7:8888+++ {"ip":"172.16.30.50","port":5432} 10.10.10.8 -> 445 随机字符abc123 192.168.1.30|8080 ssh://192.168.56.101:22 目标地址=10.1.1.7;目标端口=1433; junk_data_172.16.20.33:8080_end [ip:10.20.30.40][port:9090] 192.168.1.10:80 172.20.5.6:6379RedisService 10.0.0.20,443 连接失败:10.0.20.20:22错误代码=10061 `172.20.20.20:995` server192.168.9.9:9090statusUP 192.168.2.15	3306 tcp://10.10.20.30:9000 999.168.1.1:80 192.168.300.1:443 10.0.0.5:65536 10.0.0.5:abc :8080 192.168.1.1 端口8080但是没有IP 127.0.0.1:8080 127.0.0.1:8080 0.0.0.0:80 asset-list=[192.168.1.5:80,10.0.0.5:80,172.16.0.5:80] src_ip=172.16.1.100 src_port=54321 dst_ip=192.168.1.1 dst_port=80 https://10.0.0.9:8443/api/v1/user?id=100 ###10.10.1.1:53### （10.10.30.30:135）192.168.1.200:65535 10.0.0.200:1 172.16.0.200:0 NmapScanHost=192.168.90.10 ports=22/tcp,80/tcp,443/tcp 对应地址192.168.90.10:22,192.168.90.10:80,192.168.90.10:443 backup_nodes="192.168.1.5:80;192.168.1.5:80;10.0.0.5:443" version=10.20.30.40 date=2026.07.21:0915 mail=test@example.com -----END-----
+```
+
+```
+a b c d e
+1 2 3 4 5 
+1 2 3 4 5 
+1 2 3 4 5 
+1 2 3 4 5 
+1 2 3 4 5 
+1 2 3 4 5 
+1 2 3 4 5 
+```
+
+```
+56789 1231 87594931236 13125643 9087 44
+56789 1231 87594931236 13125643 9087 44 asd da d SD d
+56789 1231 87594931236 13125643 9087 44 asd da d SD d 中文
+```
+
+```
+/username/=user1/username/=user2/username/=user3/username/=user4/username/=user5/username=user6
+```
+
+```
+layout.c659950a.js.map
+login.6d079942.js.map
+patrol.6693084f.js.map
+
+reverse-sourcemap 
+reverse-sourcemap 
+reverse-sourcemap 
+
+ -o login.6d079942.js.map
+ -o layout.c659950a.js.map
+ -o patrol.6693084f.js.map 
+```
+
+```
+452    4    97    200    23    false    false    34089    邮箱 (1)
+467    5    99    200    19    false    false    34089    邮箱 (1)
+503    6    104    200    16    false    false    34089    邮箱 (1)
+506    2    105    200    18    false    false    34089    邮箱 (1)
+521    3    107    200    18    false    false    34089    邮箱 (1)
+554    1    112    200    22    false    false    34089    邮箱 (1)
+595    7    117    200    24    false    false    34089    邮箱 (1)
+```
+

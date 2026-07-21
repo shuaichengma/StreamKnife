@@ -1,8 +1,8 @@
 import re
 
-NAME = "提取 HTTP/HTTPS 路径"
+NAME = "提取HTTP/HTTPS路径"
 CATEGORY = "网络数据"
-DESC = "从杂乱文本中提取 URL，并支持去重/清洗/去协议"
+DESC = "从杂乱文本中提取URL，并支持去重/清洗/去协议"
 
 META = {
     "params": [

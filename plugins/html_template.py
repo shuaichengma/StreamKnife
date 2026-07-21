@@ -1,6 +1,6 @@
-NAME = "生成 html 模板"
-CATEGORY = "模板"
-DESC = "生成标准 html5 模板并将内容包裹到body标签中"
+NAME = "生成HTML模板"
+CATEGORY = "文件制作"
+DESC = "生成标准HTML5模板并将内容包裹到body标签中"
 
 META = {
     "params": [

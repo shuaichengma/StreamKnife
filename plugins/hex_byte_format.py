@@ -1,8 +1,8 @@
 import re
 
-NAME = "十六进制按字节格式化"
-CATEGORY = "编码"
-DESC = "将连续hex字符串按2位分组，并转换为0x??格式输出"
+NAME = "HEX按字节格式化"
+CATEGORY = "编码处理"
+DESC = "将连续HEX字符串按2位分组，并转换为0x??格式输出"
 
 def run(data: str) -> str:
     data = data.strip()
