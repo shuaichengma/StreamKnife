@@ -1,3 +1,13 @@
+// StreamKnife 配置文件
+// 修改后重启程序生效
+//
+// close_action  : "ask" (每次询问) | "quit" (直接退出) | "minimize" (最小化到托盘)
+// save_path     : 快速保存目录，留空则保存到程序所在目录
+// window_width  : 默认窗口宽度 (像素)
+// window_height : 默认窗口高度 (像素)
 {
-  "close_action": "minimize"
+  "close_action": "quit",
+  "save_path": ".\\",
+  "window_width": 800,
+  "window_height": 600
 }

@@ -1,6 +1,8 @@
+import re
+
 NAME = "文本排序"
 CATEGORY = "文本处理"
-DESC = "按字典序或数值大小对文本行排序，支持升序/降序；字符串模式支持按字符或按空格分词排序"
+DESC = "按字典序、数值大小或IP地址对文本行排序，支持升序/降序；字符串模式支持按字符或按空格分词排序"
 
 META = {
     "params": [
@@ -8,7 +10,7 @@ META = {
             "name": "mode",
             "type": "radio",
             "label": "排序模式",
-            "options": ["字符串排序", "数值排序"],
+            "options": ["字符串排序", "数值排序", "IP地址排序"],
             "default": "字符串排序"
         },
         {
@@ -30,6 +32,9 @@ META = {
         }
     ]
 }
+
+# IPv4 正则：行首匹配 x.x.x.x
+_IP_PATTERN = re.compile(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})')
 
 
 def _is_number(s: str) -> bool:
@@ -57,16 +62,34 @@ def _sort_key(item, numeric: bool):
     return item.lower() if isinstance(item, str) else item
 
 
+def _ip_sort_key(line: str):
+    """IP 排序键：有效 IP 按四段整数元组排序，无效行排到末尾按字符串排"""
+    m = _IP_PATTERN.match(line.strip())
+    if m:
+        octets = tuple(int(g) for g in m.groups())
+        if all(0 <= o <= 255 for o in octets):
+            # (优先级=0, IP元组, 原始行) — 同IP时保持稳定序
+            return (0, octets, line)
+    # 无效 IP 放末尾
+    return (1, (), line)
+
+
 def run(data: str, config: dict) -> str:
     mode = config.get("mode", "字符串排序")
     order = config.get("order", "升序")
     sort_by_word = config.get("sort_by_word", False)
 
     numeric = (mode == "数值排序")
+    ip_sort = (mode == "IP地址排序")
     reverse = (order == "降序")
     lines = data.splitlines()
 
-    # 数值模式：先校验所有 token 均为合法数值
+    # ---- IP 地址排序 ----
+    if ip_sort:
+        lines.sort(key=_ip_sort_key, reverse=reverse)
+        return "\n".join(lines)
+
+    # ---- 数值模式：校验 ----
     if numeric:
         invalid = []
         for line in lines:
@@ -84,9 +107,9 @@ def run(data: str, config: dict) -> str:
                 + suffix
             )
 
+    # ---- 字符串 / 数值排序 ----
     processed = []
     for line in lines:
-        # 数值模式始终按空格分词，避免字符级排序把 "10" 拆成 "01"
         if numeric or sort_by_word:
             words = line.split()
             words.sort(key=lambda w: _sort_key(w, numeric), reverse=reverse)

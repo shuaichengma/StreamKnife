@@ -1,6 +1,5 @@
 import os
 from PySide6.QtCore import Qt
-import json
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
@@ -9,13 +8,43 @@ from PySide6.QtWidgets import (
     QCheckBox, QFileDialog, QSystemTrayIcon
 )
 from utils.file_io import save_text
+from core.config import ConfigManager
 from datetime import datetime
 
+try:
+    from pypinyin import lazy_pinyin, Style
+    _HAS_PINYIN = True
+except ImportError:
+    _HAS_PINYIN = False
+
+
+def _to_pinyin(text: str) -> str:
+    """中文转全拼（无空格无音调），如 '字符替换' → 'zifutihuan'"""
+    return ''.join(lazy_pinyin(text, style=Style.NORMAL))
+
+
+def _to_pinyin_initials(text: str) -> str:
+    """中文转拼音首字母，如 '字符替换' → 'zfth'"""
+    return ''.join(lazy_pinyin(text, style=Style.FIRST_LETTER))
+
+
+def _match_plugin(name: str, query: str) -> bool:
+    """检查插件名是否匹配搜索词：直接匹配 / 全拼匹配 / 首字母匹配"""
+    if query in name:
+        return True
+    if _HAS_PINYIN:
+        if query in _to_pinyin(name):
+            return True
+        if len(query) >= 2 and query in _to_pinyin_initials(name):
+            return True
+    return False
+
 class MainWindow(QWidget):
-    def __init__(self, dispatcher):
+    def __init__(self, dispatcher, config_manager=None):
         super().__init__()
 
         self.dispatcher = dispatcher
+        self.config = config_manager or ConfigManager()
 
         self.setWindowTitle("StreamKnife by 帅成马")
 
@@ -85,7 +114,7 @@ class MainWindow(QWidget):
         layout.addLayout(output_header)
         layout.addWidget(self.output_box)
 
-        self.status_label = QLabel("右键可重置关闭行为")
+        self.status_label = QLabel("右键可编辑配置 / 重置关闭行为")
         self.status_label.setStyleSheet("color: gray;")
         self.status_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.status_label.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -255,10 +284,13 @@ class MainWindow(QWidget):
         self.input_label.setVisible(True)
         self.input_box.setVisible(True)
 
+        query = text.strip().lower().replace(" ", "")
+        if not query:
+            return
+
         for key, meta in self.all_plugins.items():
-
-            if text.lower() in meta["name"].lower():
-
+            name = meta["name"].lower()
+            if _match_plugin(name, query):
                 self._add_plugin(key, meta)
 
     # 执行
@@ -328,7 +360,7 @@ class MainWindow(QWidget):
         except Exception as e:
             self.status_label.setText(f"导入失败：{e}")
 
-    # 快速保存（exe/脚本所在目录 + 默认文件名）
+    # 快速保存
     def save(self):
         import sys
         content = self.output_box.toPlainText()
@@ -338,7 +370,10 @@ class MainWindow(QWidget):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"result_{timestamp}.txt"
 
-        if getattr(sys, 'frozen', False):
+        custom_path = self.config.get("save_path", "")
+        if custom_path:
+            base = custom_path
+        elif getattr(sys, 'frozen', False):
             base = os.path.dirname(sys.executable)
         else:
             base = os.path.abspath(".")
@@ -377,57 +412,40 @@ class MainWindow(QWidget):
 
     # ---- 关闭行为 ----
 
-    def _settings_path(self):
-        import sys
-        if getattr(sys, 'frozen', False):
-            base = os.path.dirname(sys.executable)
-        else:
-            base = os.path.abspath(".")
-        return os.path.join(base, "config", "settings.json")
-
-    def _load_close_preference(self):
-        path = self._settings_path()
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return data.get("close_action")
-        except Exception:
-            return None
-
     def _save_close_preference(self, action):
-        path = self._settings_path()
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        data = {}
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except Exception:
-            pass
-        data["close_action"] = action
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        self.config.set("close_action", action)
+        self.config.save()
 
     def _reset_close_preference(self):
-        path = self._settings_path()
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            data.pop("close_action", None)
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception:
-            pass
+        self.config.reset("close_action")
+        self.config.save()
         self.status_label.setText("已重置关闭行为，下次关闭时将再次询问")
         self.status_label.setStyleSheet("color: green;")
 
     def _on_status_context_menu(self, pos):
         menu = QMenu(self)
-        action = menu.addAction("重置关闭行为")
-        action.triggered.connect(self._reset_close_preference)
+        edit_action = menu.addAction("编辑配置文件")
+        edit_action.triggered.connect(self._open_config_file)
+        menu.addSeparator()
+        reset_action = menu.addAction("重置关闭行为")
+        reset_action.triggered.connect(self._reset_close_preference)
         menu.exec(self.status_label.mapToGlobal(pos))
 
+    def _open_config_file(self):
+        """用系统默认编辑器打开配置文件"""
+        import sys
+        path = self.config.filepath
+        if not os.path.exists(path):
+            self.config.save()
+        if sys.platform == "win32":
+            os.startfile(path)
+        else:
+            from PySide6.QtGui import QDesktopServices
+            from PySide6.QtCore import QUrl
+            QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+
     def closeEvent(self, event):
-        pref = self._load_close_preference()
+        pref = self.config.get("close_action")
 
         # 已有记忆 → 直接执行
         if pref == "quit":

@@ -15,6 +15,12 @@ META = {
             "type": "radio",
             "label": "目标类型",
             "options": ["binary", "oct", "decimal", "hex", "string"]
+        },
+        {
+            "name": "remove_spaces",
+            "type": "checkbox",
+            "label": "去除字符间空格",
+            "default": False
         }
     ]
 }
@@ -109,8 +115,10 @@ def run(data: str, config: dict) -> str:
 
     from_base = config.get("from_base", "decimal")
     to_base = config.get("to_base", "decimal")
+    remove_spaces = config.get("remove_spaces", False)
 
     tokens = data.strip().split()
+    separator = "" if remove_spaces else " "
 
     results = []
 
@@ -241,4 +249,4 @@ def run(data: str, config: dict) -> str:
 
             results.append(f"[ERR:{token}]")
 
-    return " ".join(results)
+    return separator.join(results)
