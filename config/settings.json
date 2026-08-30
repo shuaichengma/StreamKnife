@@ -6,7 +6,7 @@
 // window_width  : 默认窗口宽度 (像素)
 // window_height : 默认窗口高度 (像素)
 {
-  "close_action": "quit",
+  "close_action": "ask",
   "save_path": ".\\",
   "window_width": 800,
   "window_height": 600

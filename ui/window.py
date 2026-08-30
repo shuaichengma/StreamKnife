@@ -1,4 +1,5 @@
 import os
+from itertools import islice, product
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -12,7 +13,7 @@ from core.config import ConfigManager
 from datetime import datetime
 
 try:
-    from pypinyin import lazy_pinyin, Style
+    from pypinyin import lazy_pinyin, pinyin, Style
     _HAS_PINYIN = True
 except ImportError:
     _HAS_PINYIN = False
@@ -28,16 +29,82 @@ def _to_pinyin_initials(text: str) -> str:
     return ''.join(lazy_pinyin(text, style=Style.FIRST_LETTER))
 
 
+def _to_pinyin_variants(text: str, style, limit: int = 4096) -> set[str]:
+    """Return pinyin spellings for all polyphonic readings of ``text``.
+
+    The limit prevents an unusually long name with many polyphonic characters
+    from making the search path expensive.
+    """
+    readings = pinyin(text, style=style, heteronym=True)
+    variants = {
+        ''.join(parts)
+        for parts in islice(product(*(item or [""] for item in readings)), limit)
+    }
+    return variants
+
+
 def _match_plugin(name: str, query: str) -> bool:
-    """检查插件名是否匹配搜索词：直接匹配 / 全拼匹配 / 首字母匹配"""
+    """Match by Chinese name, full pinyin, initials, and polyphonic pinyin."""
     if query in name:
         return True
     if _HAS_PINYIN:
-        if query in _to_pinyin(name):
+        if any(query in variant for variant in _to_pinyin_variants(name, Style.NORMAL)):
             return True
-        if len(query) >= 2 and query in _to_pinyin_initials(name):
+        if len(query) >= 2 and any(
+            query in variant
+            for variant in _to_pinyin_variants(name, Style.FIRST_LETTER)
+        ):
             return True
     return False
+
+
+def _plugin_sort_key(name: str) -> tuple[str, str]:
+    """Return a stable dictionary-order key for plugin names.
+
+    Chinese names are ordered by their pinyin spelling when pypinyin is
+    available; the original name remains a tie-breaker.
+    """
+    if _HAS_PINYIN:
+        variants = _to_pinyin_variants(name, Style.NORMAL)
+        if variants:
+            return min(variants), name
+    return name.lower(), name
+
+
+def _plugin_match_sort_key(name: str, query: str) -> tuple[int, int, str, str]:
+    """Rank matches by precision, then sort them alphabetically.
+
+    A query at the beginning of the plugin name wins over a query occurring in
+    the middle; the same rule is then applied to full pinyin and initials.
+    """
+    name_lower = name.lower()
+    alpha_key = _plugin_sort_key(name)
+
+    if name_lower.startswith(query):
+        return (0, 0, *alpha_key)
+    direct_index = name_lower.find(query)
+    if direct_index >= 0:
+        return (1, direct_index, *alpha_key)
+
+    if _HAS_PINYIN:
+        full_variants = _to_pinyin_variants(name, Style.NORMAL)
+        if any(value.startswith(query) for value in full_variants):
+            return (2, 0, *alpha_key)
+        full_positions = [value.find(query) for value in full_variants]
+        full_positions = [position for position in full_positions if position >= 0]
+        if full_positions:
+            return (3, min(full_positions), *alpha_key)
+
+        initial_variants = _to_pinyin_variants(name, Style.FIRST_LETTER)
+        if any(value.startswith(query) for value in initial_variants):
+            return (4, 0, *alpha_key)
+        initial_positions = [value.find(query) for value in initial_variants]
+        initial_positions = [position for position in initial_positions if position >= 0]
+        if initial_positions:
+            return (5, min(initial_positions), *alpha_key)
+
+    return (6, 0, *alpha_key)
+
 
 class MainWindow(QWidget):
     def __init__(self, dispatcher, config_manager=None):
@@ -288,10 +355,16 @@ class MainWindow(QWidget):
         if not query:
             return
 
-        for key, meta in self.all_plugins.items():
-            name = meta["name"].lower()
-            if _match_plugin(name, query):
-                self._add_plugin(key, meta)
+        matches = [
+            (key, meta)
+            for key, meta in self.all_plugins.items()
+            if _match_plugin(meta["name"].lower(), query)
+        ]
+        for key, meta in sorted(
+            matches,
+            key=lambda item: _plugin_match_sort_key(item[1]["name"], query),
+        ):
+            self._add_plugin(key, meta)
 
     # 执行
     def run(self):

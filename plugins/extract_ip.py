@@ -23,7 +23,7 @@ META = {
             "name": "extract_ports",
             "type": "checkbox",
             "label": "提取端口号",
-            "default": True
+            "default": False
         }
     ]
 }
@@ -77,6 +77,10 @@ def run(data: str, config: dict) -> str:
             addresses[ip_text].append(port_text)
 
     lines = []
+
+    # 仅提取 IP 时直接逐行输出地址，避免生成 ``IP：`` 前缀和空行。
+    if not extract_ports:
+        return "\n".join(addresses)
 
     for index, (ip_text, ports) in enumerate(addresses.items()):
         if index:

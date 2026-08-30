@@ -34,12 +34,16 @@ META = {
 
 
 def _match_line(line: str, targets: list, case_sensitive: bool) -> bool:
-    """检查 line 是否包含任意一个 target"""
+    """检查整行内容是否与任意一个匹配项完全相同。
+
+    集合过滤按行匹配，避免匹配项 ``192.168.252.181`` 误命中
+    ``192.168.252.1812`` 这类仅包含该字符串的内容。
+    """
+    line = line.strip()
     if case_sensitive:
-        return any(t in line for t in targets)
-    else:
-        line_lower = line.lower()
-        return any(t.lower() in line_lower for t in targets)
+        return line in targets
+    line_lower = line.lower()
+    return any(line_lower == t.lower() for t in targets)
 
 
 def run(data: str, config: dict) -> str:
