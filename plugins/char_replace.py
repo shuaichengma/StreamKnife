@@ -2,7 +2,7 @@ import re
 
 NAME = "字符替换"
 CATEGORY = "文本处理"
-DESC = "将指定字符替换为另一个字符，或按集合匹配过滤行"
+DESC = "支持普通替换、逐项集合替换和整体替换"
 
 META = {
     "params": [
@@ -10,7 +10,7 @@ META = {
             "name": "mode",
             "type": "radio",
             "label": "匹配模式",
-            "options": ["普通替换", "集合过滤"],
+            "options": ["普通替换", "集合替换", "整体替换"],
             "default": "普通替换"
         },
         {
@@ -33,10 +33,10 @@ META = {
 }
 
 
-def _match_line(line: str, targets: list, case_sensitive: bool) -> bool:
+def _match_line(line: str, targets: list[str], case_sensitive: bool) -> bool:
     """检查整行内容是否与任意一个匹配项完全相同。
 
-    集合过滤按行匹配，避免匹配项 ``192.168.252.181`` 误命中
+    集合替换逐项按整行匹配，避免匹配项 ``192.168.252.181`` 误命中
     ``192.168.252.1812`` 这类仅包含该字符串的内容。
     """
     line = line.strip()
@@ -58,28 +58,26 @@ def run(data: str, config: dict) -> str:
     if not old:
         return data
 
-    # ---- 普通替换模式 ----
-    if mode == "普通替换":
+    # 普通替换与整体替换都把匹配内容视为一个完整字符串。整体替换用于
+    # 明确处理多行内容，同时保留普通替换的既有配置兼容性。
+    if mode in ("普通替换", "整体替换"):
         if case_sensitive:
             return data.replace(old, new)
 
         pattern = re.compile(re.escape(old), re.IGNORECASE)
         return pattern.sub(new, data)
 
-    # ---- 集合过滤模式 ----
-    # 将匹配内容按行拆分为独立匹配项（去除空行和首尾空白）
-    targets = [t.strip() for t in old.splitlines() if t.strip()]
+    # 集合替换：空格、制表符或换行用于分隔集合中的独立匹配项。
+    # 每一项分别与用户输入中的每一行进行完整比对。
+    targets = re.split(r"\s+", old.strip())
     if not targets:
         return data
 
-    result = []
-    for line in data.splitlines():
-        if _match_line(line, targets, case_sensitive):
-            if new:
-                # 替换为指定内容
-                result.append(new)
-            # 替换为空则移除该行
-        else:
-            result.append(line)
-
-    return "\n".join(result)
+    # 保留未匹配行原有的换行符及末尾换行；替换为空时移除整行。
+    return "".join(
+        (new + ending if new else "")
+        if _match_line(line, targets, case_sensitive)
+        else line + ending
+        for line, ending in re.findall(r"(.*?)(\r\n|\n|\r|$)", data)
+        if line or ending
+    )

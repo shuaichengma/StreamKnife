@@ -2,7 +2,7 @@ import csv
 import io
 
 NAME = "制作CSV"
-CATEGORY = "文件制作"
+CATEGORY = "内容生成"
 DESC = "按指定行列数将空格分隔的文本转换为CSV，第一行为列名"
 
 META = {
