@@ -24,6 +24,12 @@ META = {
             "type": "checkbox",
             "label": "提取端口号",
             "default": False
+        },
+        {
+            "name": "ip_sort",
+            "type": "checkbox",
+            "label": "IP地址排序",
+            "default": False
         }
     ]
 }
@@ -42,10 +48,16 @@ def clean_tail_chars(value: str) -> str:
     return value.rstrip("'\"),.;]}>`")
 
 
+def ip_sort_key(ip_text: str) -> tuple:
+    """IP 排序键：按四段整数元组升序排列。"""
+    return tuple(int(part) for part in ip_text.split("."))
+
+
 def run(data: str, config: dict) -> str:
     dedupe = config.get("dedupe", True)
     clean_tail = config.get("clean_tail", True)
     extract_ports = config.get("extract_ports", True)
+    sort_ips = config.get("ip_sort", False)
 
     addresses = {}
 
@@ -76,17 +88,19 @@ def run(data: str, config: dict) -> str:
         if not dedupe or port_text not in addresses[ip_text]:
             addresses[ip_text].append(port_text)
 
+    ordered_ips = sorted(addresses, key=ip_sort_key) if sort_ips else addresses
+
     lines = []
 
     # 仅提取 IP 时直接逐行输出地址，避免生成 ``IP：`` 前缀和空行。
     if not extract_ports:
-        return "\n".join(addresses)
+        return "\n".join(ordered_ips)
 
-    for index, (ip_text, ports) in enumerate(addresses.items()):
+    for index, ip_text in enumerate(ordered_ips):
         if index:
             lines.append("")
 
         lines.append(f"IP：{ip_text}")
-        lines.extend(ports)
+        lines.extend(addresses[ip_text])
 
     return "\n".join(lines)

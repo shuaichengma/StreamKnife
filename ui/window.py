@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QTextEdit, QPushButton, QListWidget, QMessageBox, QMenu,
     QLabel, QLineEdit, QPlainTextEdit, QRadioButton, QButtonGroup,
-    QCheckBox, QFileDialog, QSystemTrayIcon
+    QCheckBox, QComboBox, QFileDialog, QSystemTrayIcon
 )
 from utils.file_io import save_text
 from core.config import ConfigManager
@@ -113,7 +113,7 @@ class MainWindow(QWidget):
         self.dispatcher = dispatcher
         self.config = config_manager or ConfigManager()
 
-        self.setWindowTitle("StreamKnife by 帅成马")
+        self.setWindowTitle("StreamKnife V1.6 by 帅成马")
 
         # ---- 系统托盘 ----
         self.tray = QSystemTrayIcon(self)
@@ -307,6 +307,37 @@ class MainWindow(QWidget):
                 container_layout.addWidget(line)
                 self.param_values[p["name"]] = line
 
+            # ===== select =====
+            elif p["type"] == "select":
+                combo = QComboBox()
+                options = p.get("options", [])
+
+                if callable(options):
+                    try:
+                        options = options()
+                    except Exception:
+                        options = []
+
+                for option in options:
+                    if isinstance(option, (tuple, list)) and len(option) == 2:
+                        combo.addItem(str(option[0]), option[1])
+                    else:
+                        combo.addItem(str(option))
+
+                default = p.get("default")
+
+                if default is not None:
+                    index = combo.findData(default)
+
+                    if index < 0:
+                        index = combo.findText(str(default))
+
+                    if index >= 0:
+                        combo.setCurrentIndex(index)
+
+                container_layout.addWidget(combo)
+                self.param_values[p["name"]] = combo
+
             # ===== checkbox =====
             elif p["type"] == "checkbox":
                 cb = QCheckBox(p["label"])
@@ -396,6 +427,11 @@ class MainWindow(QWidget):
                         config[p["name"]] = widget.toPlainText()
                     else:
                         config[p["name"]] = widget.text()
+
+                # select
+                elif p["type"] == "select":
+                    value = widget.currentData()
+                    config[p["name"]] = value if value is not None else widget.currentText()
 
                 # checkbox
                 elif p["type"] == "checkbox":
