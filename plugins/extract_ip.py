@@ -56,10 +56,11 @@ def ip_sort_key(ip_text: str) -> tuple:
 def run(data: str, config: dict) -> str:
     dedupe = config.get("dedupe", True)
     clean_tail = config.get("clean_tail", True)
-    extract_ports = config.get("extract_ports", True)
+    extract_ports = config.get("extract_ports", False)
     sort_ips = config.get("ip_sort", False)
 
-    addresses = {}
+    # 记录每一次匹配，未勾选“结果去重”时据此保留重复项
+    occurrences = []
 
     for match in IP_PATTERN.finditer(data):
         ip_text = match.group("ip")
@@ -72,35 +73,56 @@ def run(data: str, config: dict) -> str:
         except ipaddress.AddressValueError:
             continue
 
-        if ip_text not in addresses:
-            addresses[ip_text] = []
+        port_text = None
 
-        if not extract_ports or match.group("port") is None:
-            continue
+        if extract_ports and match.group("port") is not None:
+            port = int(match.group("port"))
 
-        port = int(match.group("port"))
+            if 0 <= port <= 65535:
+                port_text = str(port)
 
-        if not 0 <= port <= 65535:
-            continue
-
-        port_text = str(port)
-
-        if not dedupe or port_text not in addresses[ip_text]:
-            addresses[ip_text].append(port_text)
-
-    ordered_ips = sorted(addresses, key=ip_sort_key) if sort_ips else addresses
-
-    lines = []
+        occurrences.append((ip_text, port_text))
 
     # 仅提取 IP 时直接逐行输出地址，避免生成 ``IP：`` 前缀和空行。
     if not extract_ports:
-        return "\n".join(ordered_ips)
+        results = [ip_text for ip_text, _ in occurrences]
 
-    for index, ip_text in enumerate(ordered_ips):
+        if dedupe:
+            results = list(dict.fromkeys(results))
+
+        if sort_ips:
+            results.sort(key=ip_sort_key)
+
+        return "\n".join(results)
+
+    if dedupe:
+        # 按 IP 分组，端口去重，保持首次出现顺序
+        grouped = {}
+
+        for ip_text, port_text in occurrences:
+            ports = grouped.setdefault(ip_text, [])
+
+            if port_text is not None and port_text not in ports:
+                ports.append(port_text)
+
+        blocks = list(grouped.items())
+    else:
+        # 不去重：每次出现各输出一个 IP 块，保留重复地址和端口
+        blocks = [
+            (ip_text, [port_text] if port_text is not None else [])
+            for ip_text, port_text in occurrences
+        ]
+
+    if sort_ips:
+        blocks.sort(key=lambda item: ip_sort_key(item[0]))
+
+    lines = []
+
+    for index, (ip_text, ports) in enumerate(blocks):
         if index:
             lines.append("")
 
         lines.append(f"IP：{ip_text}")
-        lines.extend(addresses[ip_text])
+        lines.extend(ports)
 
     return "\n".join(lines)

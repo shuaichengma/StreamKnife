@@ -12,8 +12,8 @@ import sys
 DEFAULTS = {
     "close_action": "ask",                 # "ask" | "quit" | "minimize"
     "save_path": "",                       # "" 表示使用 exe/脚本所在目录
-    "window_width": 800,
-    "window_height": 600,
+    "window_width": 800,                   # 窗口初始宽度（可自定义）
+    "window_height": 600,                  # 窗口初始高度（可自定义）
 }
 
 # 写入时附在 JSON 之前的注释头
@@ -22,8 +22,9 @@ _COMMENT_HEADER = """// StreamKnife 配置文件
 //
 // close_action  : "ask" (每次询问) | "quit" (直接退出) | "minimize" (最小化到托盘)
 // save_path     : 快速保存目录，留空则保存到程序所在目录
-// window_width  : 默认窗口宽度 (像素)
-// window_height : 默认窗口高度 (像素)
+// window_width  : 窗口初始宽度 (像素)，用户可自定义
+// window_height : 窗口初始高度 (像素)，用户可自定义
+//                 注意：窗口高度会随所选插件的参数控件自动调整，此值仅决定启动时的初始大小
 """
 
 

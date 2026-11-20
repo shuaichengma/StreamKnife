@@ -1,6 +1,11 @@
+import struct
+
 NAME = "进制/字符转换"
 CATEGORY = "编码处理"
-DESC = "支持二进制、八进制、十进制、十六进制、字符串之间批量转换"
+DESC = (
+    "支持二进制、八进制、十进制、十六进制、字符串之间批量转换；"
+    "字符串可按UTF-8字节流或Unicode码点转十六进制，十进制可按IEEE754内存编码输出"
+)
 
 META = {
     "params": [
@@ -8,13 +13,59 @@ META = {
             "name": "from_base",
             "type": "radio",
             "label": "原始类型",
-            "options": ["binary", "oct", "decimal", "hex", "string"]
+            "options": [
+                ("二进制", "binary"),
+                ("八进制", "oct"),
+                ("十进制", "decimal"),
+                ("十六进制", "hex"),
+                ("字符串", "string")
+            ]
         },
         {
             "name": "to_base",
             "type": "radio",
             "label": "目标类型",
-            "options": ["binary", "oct", "decimal", "hex", "string"]
+            "options": [
+                ("二进制", "binary"),
+                ("八进制", "oct"),
+                ("十进制", "decimal"),
+                ("十六进制", "hex"),
+                ("字符串", "string")
+            ]
+        },
+        {
+            "name": "string_encoding",
+            "type": "radio",
+            "label": "字符串转十六进制方式",
+            "options": [
+                ("UTF-8字节流", "utf8"),
+                ("Unicode码点", "unicode")
+            ],
+            "default": "utf8",
+            "visible_when": [
+                {"param": "from_base", "equals": "string"},
+                {"param": "to_base", "equals": "hex"}
+            ]
+        },
+        {
+            "name": "add_prefix",
+            "type": "checkbox",
+            "label": "十六进制添加0x前缀",
+            "default": True,
+            "visible_when": [
+                {"param": "from_base", "equals": "string"},
+                {"param": "to_base", "equals": "hex"}
+            ]
+        },
+        {
+            "name": "ieee754",
+            "type": "checkbox",
+            "label": "按IEEE754内存编码输出（float）",
+            "default": False,
+            "visible_when": [
+                {"param": "from_base", "equals": "decimal"},
+                {"param": "to_base", "equals": "hex"}
+            ]
         },
         {
             "name": "remove_spaces",
@@ -95,8 +146,15 @@ def base_to_decimal(token, from_base):
 
     token = token.strip()
 
+    # 单独处理符号，避免小数部分丢失负号（如 -1.1 二进制 → -1.5）
+    sign = 1
+    if token[:1] in ("+", "-"):
+        if token[0] == "-":
+            sign = -1
+        token = token[1:]
+
     if '.' not in token:
-        return int(token, from_base)
+        return sign * int(token, from_base)
 
     int_part, frac_part = token.split('.', 1)
 
@@ -106,9 +164,28 @@ def base_to_decimal(token, from_base):
 
         value = int(ch, 16)
 
+        # 校验数位是否属于当前进制，如二进制中出现 9 应报错
+        if value >= from_base:
+            raise ValueError(
+                f"invalid digit {ch!r} for base {from_base}"
+            )
+
         result += value / (from_base ** idx)
 
-    return result
+    return sign * result
+
+
+def float_to_mem_hex(value):
+    """float -> IEEE754 大端十六进制，如 1.5 -> 0x3fc00000"""
+    packed = struct.pack('<f', float(value))
+    return '0x' + ''.join(f'{b:02x}' for b in packed[::-1])
+
+
+def string_to_hex_units(token, encoding):
+    """字符串按 UTF-8 字节流或 Unicode 码点拆成十六进制单元"""
+    if encoding == "unicode":
+        return [f"{ord(ch):x}" for ch in token]
+    return [f"{b:02x}" for b in token.encode("utf-8")]
 
 
 def run(data: str, config: dict) -> str:
@@ -116,11 +193,46 @@ def run(data: str, config: dict) -> str:
     from_base = config.get("from_base", "decimal")
     to_base = config.get("to_base", "decimal")
     remove_spaces = config.get("remove_spaces", False)
+    string_encoding = config.get("string_encoding", "utf8")
+    add_prefix = config.get("add_prefix", True)
+    ieee754 = config.get("ieee754", False)
 
     tokens = data.strip().split()
     separator = "" if remove_spaces else " "
 
     results = []
+
+    def convert_value(value):
+        """把数值按 to_base 转成输出字符串。
+
+        负数按「符号 + 绝对值」输出，如 -1 十六进制 → -0x1。
+        """
+
+        if to_base == "decimal":
+            return str(value)
+
+        if to_base == "binary":
+            if isinstance(value, float) and not value.is_integer():
+                return decimal_to_base(value, 2)
+            sign = "-" if value < 0 else ""
+            return sign + bin(abs(int(value)))[2:].zfill(8)
+
+        if to_base == "oct":
+            if isinstance(value, float) and not value.is_integer():
+                return decimal_to_base(value, 8)
+            sign = "-" if value < 0 else ""
+            return sign + oct(abs(int(value)))[2:].zfill(3)
+
+        if to_base == "hex":
+            sign = "-" if value < 0 else ""
+            if isinstance(value, float) and not value.is_integer():
+                return sign + "0x" + decimal_to_base(abs(value), 16)
+            return sign + "0x" + hex(abs(int(value)))[2:].upper()
+
+        if to_base == "string":
+            return chr(int(value))
+
+        return None
 
     for token in tokens:
 
@@ -138,12 +250,8 @@ def run(data: str, config: dict) -> str:
             # =========================
             if from_base == "string" and to_base == "hex":
 
-                hex_str = ''.join(
-                    f"{ord(c):02X}"
-                    for c in token
-                )
-
-                results.append("0x" + hex_str)
+                for unit in string_to_hex_units(token, string_encoding):
+                    results.append(("0x" + unit) if add_prefix else unit)
                 continue
 
             # =========================
@@ -191,11 +299,10 @@ def run(data: str, config: dict) -> str:
 
             elif from_base == "string":
 
-                if len(token) != 1:
-                    results.append(f"[ERR:{token}]")
-                    continue
-
-                value = ord(token)
+                # 字符串 token 的每个字符单独转换，支持 "AB" 这类整段输入
+                for ch in token:
+                    results.append(convert_value(ord(ch)))
+                continue
 
             else:
                 results.append(f"[ERR:{token}]")
@@ -205,45 +312,14 @@ def run(data: str, config: dict) -> str:
             # 输出转换
             # =========================
 
-            if to_base == "decimal":
-                results.append(str(value))
+            if ieee754 and from_base == "decimal" and to_base == "hex":
+                results.append(float_to_mem_hex(value))
+                continue
 
-            elif to_base == "binary":
-
-                if isinstance(value, float) and not value.is_integer():
-                    results.append(decimal_to_base(value, 2))
-                else:
-                    results.append(
-                        bin(int(value))[2:].zfill(8)
-                    )
-
-            elif to_base == "oct":
-
-                if isinstance(value, float) and not value.is_integer():
-                    results.append(decimal_to_base(value, 8))
-                else:
-                    results.append(
-                        oct(int(value))[2:].zfill(3)
-                    )
-
-            elif to_base == "hex":
-
-                if isinstance(value, float) and not value.is_integer():
-                    results.append(
-                        "0x" + decimal_to_base(value, 16)
-                    )
-                else:
-                    results.append(
-                        "0x" + hex(int(value))[2:].upper()
-                    )
-
-            elif to_base == "string":
-
-                results.append(chr(int(value)))
-
-            else:
-
-                results.append(f"[ERR:{token}]")
+            converted = convert_value(value)
+            results.append(
+                converted if converted is not None else f"[ERR:{token}]"
+            )
 
         except Exception:
 

@@ -1,0 +1,48 @@
+// StreamKnife 配方库配置文件
+// 可在此手动编辑，也可通过主界面的“配方库”按钮自动维护
+//
+// recipes[].name   : 配方名称
+// recipes[].items  : 按顺序执行的插件列表
+//   key            : 插件文件名（不含 .py）
+//   name           : 插件显示名称
+//   enabled        : false 表示临时禁用，执行配方时跳过
+//   config         : 保存配方时该插件的参数
+{
+  "recipes": [
+    {
+      "name": "IP地址去重排序",
+      "saved_at": "2026-11-17 15:35:19",
+      "items": [
+        {
+          "key": "extract_ip",
+          "name": "提取IP地址",
+          "enabled": true,
+          "config": {
+            "dedupe": false,
+            "clean_tail": true,
+            "extract_ports": false,
+            "ip_sort": false
+          }
+        },
+        {
+          "key": "dedup_lines",
+          "name": "字符串去重",
+          "enabled": true,
+          "config": {
+            "mode": "按行去重"
+          }
+        },
+        {
+          "key": "text_sort",
+          "name": "文本排序",
+          "enabled": true,
+          "config": {
+            "mode": "IP地址排序",
+            "order": "升序",
+            "sort_by_word": false
+          }
+        }
+      ]
+    }
+  ]
+}
